@@ -1,0 +1,129 @@
+---
+description: Daisy Patch SM library template, folder structure and reuse of effects/UI
+alwaysApply: true
+---
+
+# Daisy Patch SM – Library Template & Reusability
+
+## Language
+
+- **All code, comments, and documentation must be in English.**
+- Variable names, function names, class names, comments, Doxygen docs, and user-facing strings: English only.
+
+## Template Structure (main entry point)
+
+The main entry point (e.g. `MarkovChain.cpp`) follows a fixed pattern with **stub callback functions** that you implement:
+
+```cpp
+// Callbacks – implement your logic here
+void OnPotChanged(int index, float value) {
+    switch (index) {
+        case patch_sm::CV_1: /* Pot 1 */ break;
+        case patch_sm::CV_2: /* Pot 2 */ break;
+        case patch_sm::CV_3: /* Pot 3 */ break;
+        case patch_sm::CV_4: /* Pot 4 */ break;
+    }
+}
+void OnToggleChanged(bool toggleState) { /* ... */ }
+void OnButtonPressed() { /* ... */ }
+
+void UpdateValues() { /* ui.SetPotValue, ui.Update, set callbacks once */ }
+void AudioCallback(...) { /* audio processing */ }
+int main(void) { /* hw.Init, ui.Init, hw.StartAudio, main loop */ }
+```
+
+- **OnPotChanged**: `index` = CV_1..CV_4, `value` = mapped value [min..max]
+- **OnToggleChanged**: `toggleState` = current toggle state
+- **OnButtonPressed**: called on button rising edge
+
+## Folder Structure (required)
+
+```
+library/
+├── effects/          # DSP effects (filter, delay, envelope, etc.)
+│   ├── Envelope.h
+│   ├── Envelope.cpp
+│   ├── SwfBiquad.h
+│   ├── SwfBiquad.cpp
+│   └── ...
+├── ui/               # UI components (UIManager, ParamSmoother, ClockDetector)
+│   ├── UIManager.h
+│   ├── UIManager.cpp
+│   ├── ParamSmoother.h
+│   ├── ClockDetector.h
+│   ├── ClockDetector.cpp
+│   └── ...
+└── tools.cpp         # Utility functions (mapping, envelopeFollower, etc.)
+```
+
+- **library/effects/** → pure DSP, no hardware dependencies
+- **library/ui/** → UI logic, may use Daisy hardware
+
+## File Rules
+
+- Every effect or UI component **always** has a `.h` and a `.cpp`
+- No header-only modules unless explicitly desired
+- Use `#pragma once` in headers
+- Namespace: `sudwalfulkaan`
+
+## Reuse Before Generating
+
+**Before generating new code:**
+
+1. **Search `library/effects/`** for an existing effect that fits:
+   - Filter → `SwfBiquad`, `LinkwitzRileyCrossover`
+   - Envelope → `Envelope`
+   - Saturation/Drive → `Saturation`, `Tanh`
+   - Stereo effects → `StereoPhaser`, `StereoChorus`, `StereoReverbSc`
+   - Ducking → `Ducker`
+   - Mid/Side → `MidSide`
+   - Limiter → `SwfLimiter`
+
+2. **Search `library/ui/`** for an existing UI component:
+   - Pot smoothing → `ParamSmoother`
+   - Pot config + callbacks → `UIManager`
+   - BPM/clock detection → `ClockDetector`
+
+3. **Search `library/tools.cpp`** for utilities:
+   - `logMapping`, `mapping`, `envelopeFollower`, `SlewLimiter`, `CalculateReleaseTime`
+
+4. **Explicitly state** whether existing code is sufficient:
+   - ✅ "Existing `SwfBiquad` is sufficient for this filter"
+   - ⚠️ "`Envelope` covers 80% of the use case; only release curve needs to differ"
+   - ❌ "No suitable effect; new effect required"
+
+## Code Style
+
+- **Classes**: PascalCase
+- **Variables/functions**: camelCase
+- **Comments**: Doxygen style (`@brief`, `@param`, `@return`)
+- **C++17+** compatible
+- No Daisy hardware references in `library/effects/` (pure DSP)
+
+## Effect/UI Pattern
+
+```cpp
+// .h
+namespace sudwalfulkaan {
+    class MyEffect {
+    public:
+        void Init(float sampleRate, ...);
+        float Process(float in);  // or void Process(float& left, float& right);
+    private:
+        float sampleRate_;
+        // ...
+    };
+}
+
+// .cpp – implementation
+```
+
+## Include Pattern in Main
+
+```cpp
+#include "library/ui/UIManager.h"
+#include "library/ui/UIManager.cpp"  // or via build system
+#include "library/tools.cpp"
+#include "library/effects/Envelope.h"
+#include "library/effects/Envelope.cpp"
+```

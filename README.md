@@ -1,9 +1,5 @@
-# TwinningDelay
-
-## Author
-
-Súdwâlfulkaan
+# Daisy Boilerplate
 
 ## Description
 
-Stereo delay module for Daisy Patch SM.
+Boilerplate code for daisy patch init modules
